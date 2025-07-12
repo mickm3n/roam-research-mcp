@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "roam-research": {
+      "command": "uv",
+      "args": ["run", "python", "src/roam_research_mcp/server.py"],
+      "env": {
+        "ROAM_TOKEN": "your_roam_research_token_here",
+        "ROAM_GRAPH_NAME": "your_graph_name_here"
+      }
+    }
+  }
+}
