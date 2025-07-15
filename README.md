@@ -47,7 +47,14 @@ Add this configuration to your Claude Desktop config file:
   "mcpServers": {
     "roam-research": {
       "command": "uv",
-      "args": ["run", "python", "/absolute/path/to/roam-research-mcp/src/roam_research_mcp/server.py"],
+      "args": [
+        "--directory",
+        "/absolute/path/to/roam-research-mcp",
+        "run",
+        "python",
+        "-m",
+        "src.roam_research_mcp.server"
+      ],
       "env": {
         "ROAM_TOKEN": "your_actual_roam_token",
         "ROAM_GRAPH_NAME": "your_graph_name"
