@@ -1,7 +1,7 @@
 [project]
 name = "roam-research-mcp"
 version = "0.1.0"
-description = "Add your description here"
+description = "MCP server for Roam Research API integration"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -10,3 +10,6 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "requests>=2.32.4",
 ]
+
+[project.scripts]
+roam-research-mcp = "main:mcp.run"
