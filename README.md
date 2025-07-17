@@ -4,10 +4,12 @@ A Model Context Protocol (MCP) server that provides tools to interact with Roam 
 
 ## Features
 
-- **Get Page Content**: Retrieve content from any page in your Roam Research graph
-- **Get Page References**: Find all references to a specific page
+- **Get Page Content**: Retrieve content from any page with nested child blocks in markdown format
+- **Get Page References**: Find all references to a specific page with pagination support and time-based sorting
 - **Write to Page**: Add new blocks to existing pages
 - **Write to Today**: Add content to today's daily page (auto-creates if needed)
+- **Markdown Conversion**: Automatically converts Roam-style `[[links]]` to markdown format
+- **Nested Block Support**: Handles hierarchical block structures with proper indentation
 
 ## Installation
 
@@ -52,8 +54,7 @@ Add this configuration to your Claude Desktop config file:
         "/absolute/path/to/roam-research-mcp",
         "run",
         "python",
-        "-m",
-        "src.roam_research_mcp.server"
+        "main.py"
       ],
       "env": {
         "ROAM_TOKEN": "your_actual_roam_token",

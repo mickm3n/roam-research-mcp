@@ -52,7 +52,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ## Testing Commands
 - Run tests: `python -m pytest` (when tests are added)
-- Run server: `uv run python -m src.roam_research_mcp.server`
+- Run server: `uv run python main.py`
 - Test API connection: Create test script as needed
 
 ## Development Notes
