@@ -209,7 +209,7 @@ class RoamResearchMCPServer:
         return result
 
     def write_to_page(self, page_name: str, content: str) -> Dict[str, Any]:
-        """Write content to a specific page"""
+        """Write hierarchical content to a specific page"""
         # First, get the page UID
         page_query = f"""[:find ?uid
                          :in $ ?PAGE
@@ -229,21 +229,105 @@ class RoamResearchMCPServer:
 
         page_uid = page_result["result"][0][0]
 
-        # Create block data
-        block_data = {
-            "action": "create-block",
-            "location": {"parent-uid": page_uid, "order": "last"},
-            "block": {
-                "string": content,
-                "uid": f"{datetime.now().strftime('%m-%d-%Y')}-{datetime.now().strftime('%H%M%S')}",
-            },
-        }
+        # Parse markdown content into hierarchical blocks
+        blocks = self._parse_markdown_to_blocks(content)
+        
+        # Create the hierarchical structure
+        results = self._create_block_hierarchy(page_uid, blocks)
+        
+        return {"result": "success", "blocks_created": len(results), "details": results}
 
-        write_endpoint = f"/api/graph/{self.graph_name}/write"
-        return self._make_request("POST", write_endpoint, block_data)
+    def _parse_markdown_to_blocks(self, content: str) -> list:
+        """Parse markdown content into hierarchical block structure using dynamic indentation detection"""
+        lines = [line.rstrip() for line in content.split('\n') if line.strip()]
+        
+        # Build indentation level mapping
+        indent_map = {}  # {actual_indent: level}
+        blocks = []
+        stack = []  # Stack to track parent blocks at different levels
+        
+        for i, line in enumerate(lines):
+            actual_indent = len(line) - len(line.lstrip())
+            
+            # Determine the level for this indentation
+            if actual_indent not in indent_map:
+                if actual_indent == 0:
+                    indent_map[actual_indent] = 0
+                else:
+                    # Find the closest parent indentation level
+                    parent_indents = [k for k in indent_map.keys() if k < actual_indent]
+                    if parent_indents:
+                        parent_indent = max(parent_indents)
+                        indent_map[actual_indent] = indent_map[parent_indent] + 1
+                    else:
+                        indent_map[actual_indent] = 1
+            
+            level = indent_map[actual_indent]
+            
+            # Extract content (remove leading "- " if present)
+            text = line.strip()
+            if text.startswith('- '):
+                text = text[2:]
+            
+            # Create block structure
+            block = {
+                "string": text,
+                "uid": f"{datetime.now().strftime('%m-%d-%Y')}-{datetime.now().strftime('%H%M%S')}-{i}",
+                "children": []
+            }
+            
+            # Adjust stack to current level
+            while len(stack) > level:
+                stack.pop()
+            
+            if level == 0:
+                # Top-level block
+                blocks.append(block)
+                stack = [block]
+            else:
+                # Child block - add to the parent at the appropriate level
+                if stack and len(stack) >= level:
+                    parent = stack[level - 1]
+                    parent["children"].append(block)
+                    # Extend stack to current level
+                    while len(stack) <= level:
+                        stack.append(block)
+                    stack[level] = block
+                else:
+                    # Fallback: treat as top-level if stack is insufficient
+                    blocks.append(block)
+                    stack = [block]
+        
+        return blocks
+
+    def _create_block_hierarchy(self, parent_uid: str, blocks: list) -> list:
+        """Recursively create blocks with their children"""
+        results = []
+        
+        for block in blocks:
+            # Create the main block
+            block_data = {
+                "action": "create-block",
+                "location": {"parent-uid": parent_uid, "order": "last"},
+                "block": {
+                    "string": block["string"],
+                    "uid": block["uid"],
+                },
+            }
+            
+            write_endpoint = f"/api/graph/{self.graph_name}/write"
+            result = self._make_request("POST", write_endpoint, block_data)
+            results.append(result)
+            
+            # Create children if they exist
+            if block["children"]:
+                child_results = self._create_block_hierarchy(block["uid"], block["children"])
+                results.extend(child_results)
+        
+        return results
 
     def write_to_today_page(self, content: str) -> Dict[str, Any]:
-        """Write content to today's daily page"""
+        """Write hierarchical content to today's daily page"""
         # Use the standard Roam date format
         today = datetime.now().strftime("%B %d, %Y")
         today_uid = datetime.now().strftime("%m-%d-%Y")
@@ -269,18 +353,13 @@ class RoamResearchMCPServer:
             write_endpoint = f"/api/graph/{self.graph_name}/write"
             self._make_request("POST", write_endpoint, create_data)
 
-        # Now write the content using the UID
-        block_data = {
-            "action": "create-block",
-            "location": {"parent-uid": today_uid, "order": "last"},
-            "block": {
-                "string": content,
-                "uid": f"{datetime.now().strftime('%m-%d-%Y')}-{datetime.now().strftime('%H%M%S')}",
-            },
-        }
-
-        write_endpoint = f"/api/graph/{self.graph_name}/write"
-        return self._make_request("POST", write_endpoint, block_data)
+        # Parse markdown content into hierarchical blocks
+        blocks = self._parse_markdown_to_blocks(content)
+        
+        # Create the hierarchical structure
+        results = self._create_block_hierarchy(today_uid, blocks)
+        
+        return {"result": "success", "blocks_created": len(results), "details": results}
 
 
 # Initialize Roam Research client
