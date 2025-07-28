@@ -388,10 +388,24 @@ def get_roam_client():
 
 @mcp.tool()
 async def get_page_content(page_name: str) -> str:
-    """Get the content of a specific page in Roam Research with child blocks.
+    """Get the complete content of a specific page in Roam Research with all nested child blocks.
+    
+    Retrieves all blocks on the specified page with their hierarchical structure,
+    including nested children up to 5 levels deep. Returns content in markdown format
+    with proper indentation to reflect the block hierarchy.
 
     Args:
-        page_name: Name of the page to retrieve
+        page_name: Exact name of the page to retrieve (case-sensitive)
+        
+    Returns:
+        JSON string containing:
+        - result: Array of blocks with content and timestamps
+        - Each block includes: content (markdown), timestamp (edit time)
+        
+    Examples:
+        get_page_content("Daily Notes")
+        get_page_content("Project Planning")
+        get_page_content("信用卡")
     """
     try:
         client = get_roam_client()
@@ -404,12 +418,28 @@ async def get_page_content(page_name: str) -> str:
 
 @mcp.tool()
 async def get_page_references(page_name: str, limit: int = 10, cursor: Optional[int] = None) -> str:
-    """Get references to a specific page in Roam Research with pagination support.
+    """Get all blocks that reference a specific page in Roam Research with pagination support.
+    
+    Finds all blocks across your Roam database that contain links to the specified page.
+    Results are sorted by most recent edit time and include the full hierarchical context
+    of each referencing block.
 
     Args:
-        page_name: Name of the page to get references for
-        limit: Maximum number of results to return (default: 50)
-        cursor: Timestamp cursor for pagination (use next_cursor from previous response)
+        page_name: Exact name of the page to find references for (case-sensitive)
+        limit: Maximum number of references to return per request (default: 10)
+        cursor: Timestamp cursor for pagination - use next_cursor from previous response
+               to get additional results
+               
+    Returns:
+        JSON string containing:
+        - result: Array of referencing blocks with content and timestamps  
+        - next_cursor: Timestamp for pagination (if more results available)
+        - total_matches: Number of references found in this batch
+        
+    Examples:
+        get_page_references("GTD")
+        get_page_references("Project Alpha", limit=20)
+        get_page_references("Meeting Notes", limit=5, cursor=1640995200000)
     """
     try:
         client = get_roam_client()
@@ -422,11 +452,27 @@ async def get_page_references(page_name: str, limit: int = 10, cursor: Optional[
 
 @mcp.tool()
 async def write_to_page(page_name: str, content: str) -> str:
-    """Write content to a specific page in Roam Research.
+    """Write hierarchical markdown content to a specific page in Roam Research.
+    
+    Creates a new block structure on the specified page with automatic indentation
+    detection. Supports nested bullet points and maintains proper parent-child
+    relationships between blocks. Content is appended to the end of the page.
 
     Args:
-        page_name: Name of the page to write to
-        content: Content to write as a new block
+        page_name: Exact name of the target page (case-sensitive, must exist)
+        content: Hierarchical markdown content using '- ' prefix and indentation
+                Format: "- Main topic\n    - Subtopic\n        - Details"
+                Supports any indentation level with automatic detection
+                
+    Returns:
+        JSON string containing:
+        - result: "success" if completed
+        - blocks_created: Total number of blocks created (including children)
+        - details: Array of individual block creation results
+        
+    Examples:
+        write_to_page("Project Notes", "- New milestone\n    - Task 1\n    - Task 2")
+        write_to_page("信用卡", "- [[銀行/國泰]]\n    - 現金回饋 2%")
     """
     try:
         client = get_roam_client()
@@ -439,10 +485,26 @@ async def write_to_page(page_name: str, content: str) -> str:
 
 @mcp.tool()
 async def write_to_today(content: str) -> str:
-    """Write content to today's daily page in Roam Research.
+    """Write hierarchical markdown content to today's daily page in Roam Research.
+    
+    Automatically creates today's daily page if it doesn't exist, then adds the
+    provided content as a hierarchical block structure. Uses Roam's standard
+    date format (e.g., "July 28, 2025") and maintains proper block relationships.
 
     Args:
-        content: Content to write as a new block
+        content: Hierarchical markdown content using '- ' prefix and indentation
+                Format: "- Main topic\n    - Subtopic\n        - Details"
+                Supports any indentation level with automatic detection
+                
+    Returns:
+        JSON string containing:
+        - result: "success" if completed
+        - blocks_created: Total number of blocks created (including children) 
+        - details: Array of individual block creation results
+        
+    Examples:
+        write_to_today("- Daily standup\n    - Completed: Bug fixes\n    - Next: Feature review")
+        write_to_today("- [[會議/週會]]\n    - 參與者: @John, @Mary\n    - 議題: Q4 規劃")
     """
     try:
         client = get_roam_client()
